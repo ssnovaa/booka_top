@@ -1,78 +1,110 @@
+"use client";
+
 import React from 'react';
-import { audiobooks, Audiobook } from '../data/audiobooks';
+import { Audiobook, audiobooks } from '../data/audiobooks';
+import Image from 'next/image';
 
 interface BentoGridProps {
   setActiveBook: (book: Audiobook) => void;
 }
 
+// --- МОКОВІ ДАНІ ---
+
+const popularBookOfMonth = audiobooks[0];
+
+const youtubeRow = [
+  { id: 'v1', title: 'Booka Radio: Lo-fi для читання', thumbnail: 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?q=80&w=600&auto=format&fit=crop' },
+  { id: 'v2', title: 'Огляд: Психологія впливу', thumbnail: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=600&auto=format&fit=crop' },
+  { id: 'v3', title: 'Інтерв’ю з авторами', thumbnail: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=600&auto=format&fit=crop' },
+];
+
+const shorts = [
+  { id: 'sh1', title: 'Топ трилери 🔥', thumbnail: 'https://images.unsplash.com/photo-1521302340133-cf7b2972320d?q=80&w=600&fit=crop' },
+  { id: 'sh2', title: 'Як читати швидше', thumbnail: 'https://images.unsplash.com/photo-1457369804613-52c61a468e7d?q=80&w=600&fit=crop' },
+  { id: 'sh3', title: 'Анонс: Новий реліз', thumbnail: audiobooks[2].cover },
+];
+
 export default function BentoGrid({ setActiveBook }: BentoGridProps) {
   return (
-    <section className="max-w-7xl mx-auto px-6 mb-16">
-      <div className="bg-white/40 backdrop-blur-xl border border-white/80 rounded-[3rem] p-6 lg:p-10 shadow-[0_10px_50px_rgba(0,0,0,0.02)]">
-        <h2 className="text-3xl font-bold text-slate-900 mb-8 font-serif ml-4">Новинки на YouTube</h2>
-        <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
-          <div className="w-full lg:w-1/4">
-            <div className="bg-gradient-to-b from-white/60 to-white/30 border border-white/80 rounded-[2.5rem] p-6 flex flex-col items-center justify-between h-full shadow-sm hover:shadow-[0_0_30px_rgba(255,0,122,0.15)] transition-all group">
-              <div className="relative w-full aspect-[2/3] mb-6 mt-4">
-                <div className="absolute inset-0 bg-[#FF007A]/20 blur-2xl rounded-full scale-90 group-hover:scale-100 transition-transform"></div>
-                <img src={audiobooks[0].cover} alt="Обкладинка" className="relative z-10 w-full h-full object-cover rounded-2xl shadow-lg" />
-              </div>
-              <button onClick={() => setActiveBook(audiobooks[0])} className="w-full bg-gradient-to-r from-[#FF007A] to-[#8B5CF6] text-white py-3.5 rounded-2xl font-bold shadow-[0_4px_15px_rgba(255,0,122,0.3)] hover:scale-105 transition transform text-sm">
-                Слухати 1 розділ
-              </button>
-            </div>
-          </div>
-          <div className="w-full lg:w-3/4 flex flex-col gap-6">
-            <div className="flex items-center gap-4 overflow-x-auto pb-2 scrollbar-hide">
-              {[1,2,3,4].map((item) => (
-                <div key={item} className="flex-shrink-0 w-48 bg-slate-900 rounded-2xl p-2 relative group cursor-pointer overflow-hidden shadow-md">
-                  <img src={`https://images.unsplash.com/photo-1544947950-fa07a98d237f?q=80&w=300&auto=format&fit=crop`} alt="YouTube Video" className="w-full h-24 object-cover rounded-xl opacity-60 group-hover:opacity-80 transition bg-slate-800" />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition"><svg className="w-4 h-4 text-white ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>
-                  </div>
-                  <div className="absolute top-4 left-4 text-white text-xs font-bold">Booka Radio</div>
-                  <div className="mt-2 px-1"><h4 className="text-white text-xs font-medium truncate">Назва відео номер {item}</h4><p className="text-slate-400 text-[10px]">Романтика</p></div>
-                </div>
-              ))}
-              <button className="flex-shrink-0 bg-[#FF007A] text-white px-6 py-4 rounded-2xl font-bold text-sm shadow-[0_4px_15px_rgba(255,0,122,0.3)] hover:brightness-110 transition h-24 self-start mt-2">Дивитись більше</button>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 flex-1">
-              <div className="flex flex-col gap-6">
-                <div className="bg-white/60 border border-white/80 rounded-3xl p-4 flex gap-4 items-center shadow-sm">
-                  <img src={audiobooks[1].cover} className="w-16 h-24 object-cover rounded-xl shadow-sm" alt="cover"/>
-                  <div>
-                    <h4 className="font-bold text-sm text-slate-900 leading-tight mb-1">{audiobooks[1].title}</h4>
-                    <p className="text-xs text-[#FF007A] mb-2">{audiobooks[1].author}</p>
-                    <button onClick={() => setActiveBook(audiobooks[1])} className="bg-[#FF007A] text-white text-[10px] px-4 py-1.5 rounded-full font-bold">Слухати 1 розділ</button>
-                  </div>
-                </div>
-                <div className="bg-white/60 border border-white/80 rounded-3xl p-4 flex gap-4 items-center shadow-sm">
-                  <img src={audiobooks[2].cover} className="w-16 h-24 object-cover rounded-xl shadow-sm" alt="cover"/>
-                  <div>
-                    <h4 className="font-bold text-sm text-slate-900 leading-tight mb-1">{audiobooks[2].title}</h4>
-                    <p className="text-xs text-[#FF007A] mb-2">{audiobooks[2].author}</p>
-                    <button onClick={() => setActiveBook(audiobooks[2])} className="bg-white border border-[#FF007A] text-[#FF007A] text-[10px] px-4 py-1.5 rounded-full font-bold">Слухати 1 розділ</button>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-white/70 border border-white/80 rounded-[2.5rem] p-8 flex flex-col justify-between shadow-sm relative overflow-hidden group">
-                <div className="relative z-10"><h3 className="text-3xl font-serif font-bold text-slate-900 mb-4 leading-tight">Зараз час <br/> слухати...</h3><p className="text-sm text-slate-500 mb-6">Відкрий для себе нові світи разом із найкращими сучасними романами. Твій ідеальний вечір починається тут.</p></div>
-                <button onClick={() => setActiveBook(audiobooks[0])} className="relative z-10 bg-gradient-to-r from-[#FF007A] to-[#8B5CF6] text-white py-3 rounded-xl font-bold text-sm shadow-md hover:scale-105 transition w-2/3">Слухати 1 розділ</button>
-                <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-[#8B5CF6]/30 to-transparent"></div>
-                <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-[#FF007A]/20 blur-3xl rounded-full"></div>
-              </div>
-              <div className="flex flex-col gap-6">
-                <div className="bg-white/60 border border-white/80 rounded-3xl p-4 flex flex-col items-center text-center shadow-sm h-full justify-center">
-                  <img src={audiobooks[3].cover} className="w-20 h-28 object-cover rounded-xl shadow-sm mb-3" alt="cover"/>
-                  <h4 className="font-bold text-sm text-slate-900 leading-tight mb-1">{audiobooks[3].title}</h4>
-                  <p className="text-xs text-[#FF007A] mb-3">{audiobooks[3].author}</p>
-                  <button onClick={() => setActiveBook(audiobooks[3])} className="w-full bg-[#8B5CF6] text-white text-[10px] py-2 rounded-xl font-bold shadow-md">Слухати 1 розділ</button>
-                </div>
-              </div>
-            </div>
-          </div>
+    <div className="grid grid-cols-1 md:grid-cols-12 gap-6 auto-rows-auto">
+      
+      {/* 1. ГОЛОВНИЙ АКЦЕНТ (ВЕРТИКАЛЬНА ОБКЛАДИНКА) - зліва */}
+      <div 
+        onClick={() => setActiveBook(popularBookOfMonth)}
+        className="md:col-span-3 md:row-span-2 relative group cursor-pointer overflow-hidden rounded-[2.5rem] bg-slate-900 shadow-2xl"
+      >
+        <div className="relative w-full h-full aspect-[2/3] md:aspect-auto">
+          <Image 
+            src={popularBookOfMonth.cover} 
+            alt={popularBookOfMonth.title}
+            fill
+            className="object-cover transition-transform duration-700 group-hover:scale-105"
+            priority
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+        </div>
+        <div className="absolute inset-0 p-6 flex flex-col justify-end">
+          <h3 className="text-2xl font-bold text-white mb-2">{popularBookOfMonth.title}</h3>
+          <p className="text-slate-300 text-sm">{popularBookOfMonth.author}</p>
+          <button className="mt-4 w-full py-3 bg-white/20 backdrop-blur-md text-white rounded-full font-semibold text-sm hover:bg-white/30 transition-all">
+            Слухати
+          </button>
         </div>
       </div>
-    </section>
+
+      {/* 2. РЯД YOUTUBE (3 ВІДЕО + КНОПКА "БІЛЬШЕ") - справа зверху */}
+      <div className="md:col-span-9 grid grid-cols-2 md:grid-cols-4 gap-4">
+        {youtubeRow.map((video) => (
+          <div key={video.id} className="relative group cursor-pointer">
+            <div className="relative aspect-video rounded-3xl overflow-hidden bg-slate-200">
+              <Image src={video.thumbnail} alt={video.title} fill className="object-cover group-hover:scale-105 transition-transform" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform">
+                  <svg className="w-4 h-4 fill-white ml-0.5" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                </div>
+              </div>
+            </div>
+            <h4 className="mt-3 text-xs font-bold text-slate-800 line-clamp-2 px-1">{video.title}</h4>
+          </div>
+        ))}
+        
+        {/* Кнопка "Дивитись більше" - як окрема картка в ряду */}
+        <button className="relative aspect-video rounded-3xl bg-[#FF007A]/5 border-2 border-dashed border-[#FF007A]/20 flex flex-col items-center justify-center gap-2 group hover:bg-[#FF007A]/10 transition-all">
+          <div className="w-10 h-10 rounded-full bg-[#FF007A] text-white flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
+          </div>
+          <span className="text-xs font-bold text-[#FF007A]">Дивитись більше</span>
+        </button>
+      </div>
+
+      {/* 3. РЯД SHORTS ТА АНОНСІВ (ВЕРТИКАЛЬНІ) - справа знизу */}
+      <div className="md:col-span-9 grid grid-cols-3 md:grid-cols-4 gap-4">
+        {shorts.map((short) => (
+          <div key={short.id} className="relative aspect-[9/16] rounded-3xl overflow-hidden group cursor-pointer shadow-md">
+            <Image src={short.thumbnail} alt={short.title} fill className="object-cover group-hover:scale-105 transition-transform opacity-90" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+            <div className="absolute bottom-4 left-4 right-4">
+              <h4 className="text-[10px] md:text-xs font-bold text-white leading-tight">{short.title}</h4>
+            </div>
+            <div className="absolute top-3 right-3 w-6 h-6 bg-red-600 rounded-full flex items-center justify-center">
+              <svg className="w-3 h-3 fill-white" viewBox="0 0 24 24"><path d="M10 9.5l4.5 2.5-4.5 2.5v-5z"/></svg>
+            </div>
+          </div>
+        ))}
+
+        {/* Центральний текстовий блок (як на макеті "Зараз слухають") */}
+        <div className="hidden md:flex bg-gradient-to-br from-[#8B5CF6] to-[#6366F1] rounded-[2.5rem] p-6 flex-col justify-between text-white shadow-xl relative overflow-hidden">
+           <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
+           <h3 className="text-xl font-bold leading-tight relative z-10">Зараз <br/> слухають</h3>
+           <div className="flex items-center gap-2 relative z-10">
+              <div className="flex -space-x-2">
+                {[1,2,3].map(i => <div key={i} className="w-6 h-6 rounded-full border-2 border-indigo-500 bg-slate-300" />)}
+              </div>
+              <span className="text-[10px] font-medium">+1.2k</span>
+           </div>
+        </div>
+      </div>
+
+    </div>
   );
 }
