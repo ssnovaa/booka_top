@@ -8,6 +8,10 @@ const nextConfig = {
         port: '',
         pathname: '/**',
       },
+	  {
+        protocol: 'https',
+        hostname: 'yt3.googleusercontent.com', // Домен твоего логотипа
+      },
       {
         protocol: 'https',
         hostname: 'i.ytimg.com', // Для обкладинок YouTube відео
