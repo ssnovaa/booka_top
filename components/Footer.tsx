@@ -1,24 +1,25 @@
+"use client";
+
 import React, { useRef } from 'react';
-import { Audiobook } from '../data/audiobooks';
+import { usePlayer } from '@/context/PlayerContext'; // Імпортуємо наш новий хук
 
-interface FooterProps {
-  displayBook: Audiobook;
-  isPlaying: boolean;
-  togglePlay: () => void;
-  currentTime: number;
-  duration: number;
-  onSeek: (time: number) => void;
-}
-
-export default function Footer({ displayBook, isPlaying, togglePlay, currentTime, duration, onSeek }: FooterProps) {
+export default function Footer() {
+  const { activeBook, isPlaying, togglePlay, currentTime, duration, handleSeek } = usePlayer();
   const progressBarRef = useRef<HTMLDivElement>(null);
+
+  const formatTime = (time: number) => {
+    if (isNaN(time)) return "00:00";
+    const m = Math.floor(time / 60);
+    const s = Math.floor(time % 60);
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
 
   const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (progressBarRef.current) {
       const rect = progressBarRef.current.getBoundingClientRect();
       const clickX = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
       const safeDuration = duration > 0 ? duration : 100; 
-      onSeek((clickX / rect.width) * safeDuration);
+      handleSeek((clickX / rect.width) * safeDuration); // Використовуємо функцію з контексту
     }
   };
 
@@ -57,26 +58,21 @@ export default function Footer({ displayBook, isPlaying, togglePlay, currentTime
             <p className="font-bold text-xs">Професійна <br/> озвучка</p>
           </div>
 
-          {/* ПЛЕЄР: ЗМЕНШЕНИЙ НА 10% */}
           <div className="flex justify-center lg:col-span-2">
              <div className="relative w-full max-w-[380px] bg-[#1E192A]/60 backdrop-blur-2xl rounded-[1.25rem] border border-white/10 p-4 flex flex-col gap-2 shadow-[0_20px_40px_rgba(0,0,0,0.5),inset_0_1px_1px_rgba(255,255,255,0.1)]">
                 
-                {/* ВЕРХНЯ ЧАСТИНА: Висота зменшена з h-24 до h-20 */}
                 <div className="flex items-center gap-4 h-20 w-full">
-                  
-                  {/* Обкладинка: w-14 h-20 замість w-16 h-24 */}
                   <div className="w-14 h-20 rounded-lg overflow-hidden shadow-[0_4px_15px_rgba(0,0,0,0.4)] flex-shrink-0 relative z-10 border border-white/5">
-                    <img src={displayBook.cover} alt="cover" className="w-full h-full object-cover" />
+                    {/* Використовуємо activeBook з контексту */}
+                    <img src={activeBook.cover} alt="cover" className="w-full h-full object-cover" />
                   </div>
 
-                  {/* Еквалайзер */}
                   <div className="flex-1 h-full relative flex items-center justify-center z-0 ml-3">
                      <svg viewBox="0 0 150 60" className={`w-full h-full text-[#FF007A] ${isPlaying ? 'animate-eq drop-shadow-[0_0_8px_rgba(255,0,122,1)]' : 'drop-shadow-[0_0_4px_rgba(255,0,122,0.5)]'}`} fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" preserveAspectRatio="none">
                        <path d={cardiogramPath} vectorEffect="non-scaling-stroke" strokeWidth="2.5" />
                      </svg>
                   </div>
 
-                  {/* КНОПКА PLAY (трохи зменшена) */}
                   <div className="flex items-center flex-shrink-0 z-10 pl-1">
                     <button onClick={togglePlay} className={`transition-all duration-300 focus:outline-none flex items-center justify-center ${isPlaying ? 'text-[#FF007A] drop-shadow-[0_0_10px_rgba(255,0,122,0.8)] scale-110' : 'text-slate-300 hover:text-white'}`}>
                       {isPlaying ? (
@@ -88,7 +84,6 @@ export default function Footer({ displayBook, isPlaying, togglePlay, currentTime
                   </div>
                 </div>
 
-                {/* НИЖНЯ ЧАСТИНА: СИКБАР */}
                 <div className="flex items-center w-full mt-1.5">
                   <div 
                     ref={progressBarRef} 
@@ -100,7 +95,6 @@ export default function Footer({ displayBook, isPlaying, togglePlay, currentTime
                         className="absolute left-0 top-0 h-full bg-[#FF007A] rounded-full drop-shadow-[0_0_8px_rgba(255,0,122,0.9)] transition-all ease-linear"
                         style={{ width: `${progressPercent}%` }}
                       ></div>
-                      {/* Крапка: w-3 h-3 замість w-3.5 h-3.5 */}
                       <div 
                         className="absolute top-1/2 w-3 h-3 bg-white rounded-full shadow-[0_0_8px_rgba(255,255,255,1),0_0_12px_rgba(255,0,122,1)]"
                         style={{ left: `${progressPercent}%`, transform: 'translate(-50%, -50%)' }}
@@ -108,7 +102,6 @@ export default function Footer({ displayBook, isPlaying, togglePlay, currentTime
                     </div>
                   </div>
                 </div>
-
              </div>
           </div>
 
