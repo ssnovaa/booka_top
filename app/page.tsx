@@ -7,6 +7,7 @@ import Header from '../components/Header';
 import Hero from '../components/Hero';
 import BentoGrid from '../components/BentoGrid';
 import BentoGrid2 from '../components/BentoGrid2';
+import Collaboration from '../components/Collaboration'; // 🚀 Імпортуємо новий розділ
 import Footer from '../components/Footer';
 import { usePlayer } from '../context/PlayerContext';
 
@@ -57,8 +58,7 @@ export default function Home() {
         <BentoGrid2 setActiveBook={playBook} />
       </div>
 
-      {/* 2. НОВИЙ РОЗДІЛ: ЖАНРИ */}
-
+      {/* 2. НОВИЙ РОЗДІЛ: ЖАНРИ (можна додати пізніше або використати GenresGrid) */}
       
       {/* 3. БЕНТО 1: YOUTUBE */}
       <div className="max-w-7xl mx-auto px-6 mt-24 md:mt-32">
@@ -74,6 +74,12 @@ export default function Home() {
         <BentoGrid setActiveBook={playBook} />
       </div>
 
+      {/* 4. РОЗДІЛ: СПІВПРАЦЯ (SEO ОПТИМІЗОВАНИЙ) */}
+      <div className="mt-24 md:mt-32">
+        <Collaboration />
+      </div>
+
+      {/* 5. ФУТЕР */}
       <div className="mt-32 md:mt-40">
         <Footer />
       </div>
