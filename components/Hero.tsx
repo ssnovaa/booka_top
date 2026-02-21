@@ -1,3 +1,5 @@
+"use client";
+
 import React from 'react';
 import Image from 'next/image';
 
@@ -6,7 +8,18 @@ export default function Hero() {
     <section className="pt-24 lg:pt-28 pb-10 px-6">
       <div className="max-w-7xl mx-auto bg-[#F3F1F7] rounded-[2rem] overflow-hidden relative min-h-[440px] flex items-center">
         
-        <div className="flex flex-col lg:flex-row w-full h-full items-center">
+{/* 🌸 ДЕКОРАТИВНИЙ ФОН (з високою прозорістю та легким розмиттям) */}
+<div className="absolute inset-0 z-0 pointer-events-none">
+  <Image 
+    src="https://images.unsplash.com/photo-1490750967868-88aa4486c946?q=80&w=1000&auto=format&fit=crop" 
+    alt=""
+    fill
+    className="object-cover opacity-50 scale-110 blur-[2px]" // Додав легкий блюр для читабельності
+  />
+  <div className="absolute inset-0 bg-gradient-to-r from-[#F3F1F7]/60 via-[#F3F1F7]/40 to-transparent" />
+</div>
+
+        <div className="flex flex-col lg:flex-row w-full h-full items-center relative z-10">
           
           {/* КАРТИНКА ЗЛІВА */}
           <div className="flex-1 relative h-[300px] lg:h-[440px] w-full">
@@ -28,8 +41,8 @@ export default function Hero() {
           </div>
 
           {/* ТЕКСТ СПРАВА */}
-          <div className="flex-1 p-8 lg:p-20 flex flex-col items-center lg:items-start text-center lg:text-left justify-center relative z-10">
-            <h1 className="text-3xl lg:text-4xl font-bold text-slate-900 leading-tight mb-8">
+          <div className="flex-1 p-8 lg:p-20 flex flex-col items-center lg:items-start text-center lg:text-left justify-center relative z-20">
+            <h1 className="text-5xl md:text-5xl font-normal text-[#000066c7] font-serif mb-6 leading-tight">
               Booka. Твої улюблені історії <br className="hidden lg:block" /> у твоєму ритмі
             </h1>
             

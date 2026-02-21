@@ -1,125 +1,202 @@
 "use client";
 
-import React from 'react';
-import { Audiobook, audiobooks } from '../data/audiobooks';
+import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 import Image from 'next/image';
-import { motion } from 'framer-motion'; // Імпортуємо motion
+import { motion } from 'framer-motion';
 
-interface BentoGridProps {
-  setActiveBook: (book: Audiobook) => void;
+interface Book {
+  id: number;
+  title: string;
+  author: string;
+  cover_url: string;
+  description: string;
 }
 
-// Варіанти анімації для контейнера (керує черговістю)
+interface YouTubeShort {
+  id: string;
+  title: string;
+  thumbnail: string;
+  url: string;
+}
+
+interface PopularVideo {
+  id: string;
+  title: string;
+  thumbnail: string;
+  url: string;
+}
+
+interface BentoGridProps {
+  setActiveBook: (book: any) => void;
+}
+
 const containerVariants = {
   hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1, // Затримка 0.1с між кожним елементом
-    },
-  },
+  visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
 };
 
-// Варіанти анімації для кожної окремої картки
 const itemVariants = {
   hidden: { y: 20, opacity: 0 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    transition: {
-      duration: 0.5,
-      ease: "easeOut",
-    },
-  },
+  visible: { y: 0, opacity: 1, transition: { duration: 0.5, ease: "easeOut" } },
 };
 
 export default function BentoGrid({ setActiveBook }: BentoGridProps) {
-  // Дані залишаємо ті ж самі
-  const popularBookOfMonth = audiobooks[0];
-  const youtubeRow = [
-    { id: 'v1', title: 'Booka Radio: Lo-fi для читання', thumbnail: 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?q=80&w=600&auto=format&fit=crop' },
-    { id: 'v2', title: 'Огляд: Психологія впливу', thumbnail: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=600&auto=format&fit=crop' },
-    { id: 'v3', title: 'Інтерв’ю з авторами', thumbnail: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=600&auto=format&fit=crop' },
+  const [latestBooks, setLatestBooks] = useState<Book[]>([]);
+  const [youtubeShorts, setYoutubeShorts] = useState<YouTubeShort[]>([]);
+  const [popularVideos, setPopularVideos] = useState<PopularVideo[]>([]);
+  const [latestYoutubeVideo, setLatestYoutubeVideo] = useState<PopularVideo | null>(null);
+  const [popularWeekVideo, setPopularWeekVideo] = useState<PopularVideo | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [latestRes, booksRes, shortsRes, popularRes, popularWeekRes] = await Promise.all([
+          fetch('/api/youtube-latest').catch(() => null),
+          fetch('/api/abooks?per_page=5&sort=new'),
+          fetch('/api/youtube-shorts').catch(() => null),
+          fetch('/api/youtube-popular').catch(() => null),
+          fetch('/api/youtube-popular-week').catch(() => null) 
+        ]);
+
+        const latestYoutubeData = await latestRes?.json() || [];
+        const booksJson = await booksRes.json();
+        const shortsData = await shortsRes?.json() || [];
+        const popularData = await popularRes?.json() || [];
+        const popularWeekData = await popularWeekRes?.json() || [];
+
+        setLatestYoutubeVideo(latestYoutubeData[0] || null);
+        setPopularWeekVideo(popularWeekData[0] || null); 
+        setLatestBooks(booksJson.data || []);
+        setYoutubeShorts(Array.isArray(shortsData) ? shortsData : []);
+        setPopularVideos(Array.isArray(popularData) ? popularData : []);
+        
+        setLoading(false);
+      } catch (e) {
+        console.error("Помилка завантаження:", e);
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  if (loading) return <div className="py-20 text-center text-slate-400 font-serif italic uppercase tracking-widest text-[10px]">Налаштовуємо ефір Booka Radio...</div>;
+
+  const fallbackPopular = [
+    { id: 'v1', title: 'Огляд: Сучасна жіноча проза', thumbnail: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=1000', url: '#' },
+    { id: 'v2', title: 'Хіт тижня: Психологія стосунків', thumbnail: 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?q=80&w=1000', url: '#' },
+    { id: 'v3', title: 'Як ми озвучуємо книги', thumbnail: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=1000', url: '#' },
+    { id: 'v4', title: 'Інтерв’ю з авторкою', thumbnail: 'https://images.unsplash.com/photo-1490750967868-88aa4486c946?q=80&w=1000', url: '#' },
+    { id: 'v5', title: 'Топ 5 романів літа', thumbnail: 'https://images.unsplash.com/photo-1457369804613-52c61a468e7d?q=80&w=1000', url: '#' },
   ];
-  const shorts = [
-    { id: 'sh1', title: 'Топ трилери 🔥', thumbnail: 'https://images.unsplash.com/photo-1521302340133-cf7b2972320d?q=80&w=600&fit=crop' },
-    { id: 'sh2', title: 'Як читати швидше', thumbnail: 'https://images.unsplash.com/photo-1457369804613-52c61a468e7d?q=80&w=600&fit=crop' },
-    { id: 'sh3', title: 'Анонс: Новий реліз', thumbnail: audiobooks[2].cover },
+
+  const fallbackShorts = [
+    { id: 's1', title: 'Естетика читання', thumbnail: 'https://images.unsplash.com/photo-1521302340133-cf7b2972320d?q=80&w=600', url: '#' },
+    { id: 's2', title: 'Новий реліз!', thumbnail: 'https://images.unsplash.com/photo-1457369804613-52c61a468e7d?q=80&w=600', url: '#' },
+    { id: 's3', title: 'За лаштунками', thumbnail: 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?q=80&w=600', url: '#' },
   ];
+
+  const latestVideo = latestYoutubeVideo || fallbackPopular[0];
+  const popularWeek = popularWeekVideo || fallbackPopular[1]; 
+  
+  // 🚀 Логіка для нижнього ряду: фільтруємо дублікати та беремо топ-3 за 3 місяці
+  const displayRegularVideos = popularVideos
+    .filter(v => v.id !== latestVideo.id && v.id !== popularWeek.id)
+    .slice(0, 3);
+
+  const finalRegularVideos = displayRegularVideos.length > 0 ? displayRegularVideos : fallbackPopular.slice(2, 5);
+  const finalShorts = youtubeShorts.length >= 3 ? youtubeShorts.slice(0, 3) : fallbackShorts;
 
   return (
     <motion.div 
       variants={containerVariants}
       initial="hidden"
-      whileInView="visible" // Анімація спрацює, коли користувач дійшов до сітки скролом
-      viewport={{ once: true, margin: "-100px" }} // Спрацює один раз
-      className="grid grid-cols-1 md:grid-cols-12 gap-6 auto-rows-auto"
+      whileInView="visible"
+      viewport={{ once: true, margin: "-100px" }}
+      className="grid grid-cols-1 md:grid-cols-12 gap-6 auto-rows-auto max-w-7xl mx-auto px-6 py-10"
     >
       
-      {/* 1. ГОЛОВНИЙ АКЦЕНТ */}
-      <motion.div 
-        variants={itemVariants}
-        onClick={() => setActiveBook(popularBookOfMonth)}
-        className="md:col-span-3 md:row-span-2 relative group cursor-pointer overflow-hidden rounded-[2.5rem] bg-slate-900 shadow-2xl h-full"
+      {/* 📺 РЯД 1: ПЛИТКА 1 (LATEST) */}
+      <motion.a 
+        href={latestVideo.url} target="_blank" variants={itemVariants}
+        className="md:col-span-6 relative group cursor-pointer overflow-hidden rounded-[2rem] bg-white shadow-[0_15px_40px_rgba(0,0,0,0.04)] transition-all hover:shadow-[0_25px_60px_rgba(0,0,0,0.08)] hover:-translate-y-1"
       >
-        <div className="relative w-full h-full aspect-[2/3] md:aspect-auto min-h-[400px]">
-          <Image src={popularBookOfMonth.cover} alt={popularBookOfMonth.title} fill className="object-cover transition-transform duration-700 group-hover:scale-105" priority />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
-        </div>
-        <div className="absolute inset-0 p-6 flex flex-col justify-end">
-          <h3 className="text-2xl font-bold text-white mb-2">{popularBookOfMonth.title}</h3>
-          <p className="text-slate-300 text-sm">{popularBookOfMonth.author}</p>
-        </div>
-      </motion.div>
-
-      {/* 2. РЯД YOUTUBE */}
-      <div className="md:col-span-9 grid grid-cols-2 md:grid-cols-4 gap-4">
-        {youtubeRow.map((video) => (
-          <motion.div key={video.id} variants={itemVariants} className="relative group cursor-pointer">
-            <div className="relative aspect-video rounded-3xl overflow-hidden bg-slate-200">
-              <Image src={video.thumbnail} alt={video.title} fill className="object-cover group-hover:scale-105 transition-transform" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform">
-                  <svg className="w-4 h-4 fill-white ml-0.5" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                </div>
-              </div>
-            </div>
-            <h4 className="mt-3 text-xs font-bold text-slate-800 line-clamp-2">{video.title}</h4>
-          </motion.div>
-        ))}
-        
-        <motion.button variants={itemVariants} className="relative aspect-video rounded-3xl bg-[#FF007A]/5 border-2 border-dashed border-[#FF007A]/20 flex flex-col items-center justify-center gap-2 group hover:bg-[#FF007A]/10 transition-all">
-          <div className="w-10 h-10 rounded-full bg-[#FF007A] text-white flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
+        <div className="relative aspect-video w-full">
+          <Image src={latestVideo.thumbnail} alt="" fill unoptimized={true} className="object-cover transition-transform duration-700 group-hover:scale-105" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#000066c7]/80 via-transparent to-transparent" />
+          <div className="absolute bottom-6 left-8 text-white">
+             <span className="text-[9px] font-bold text-white/70 uppercase tracking-[0.2em] mb-1 block">Останній реліз</span>
+             <h3 className="text-xl md:text-2xl font-normal text-white font-serif leading-tight line-clamp-2">{latestVideo.title}</h3>
           </div>
-          <span className="text-xs font-bold text-[#FF007A]">Більше</span>
-        </motion.button>
-      </div>
+        </div>
+      </motion.a>
 
-      {/* 3. РЯД SHORTS ТА ТЕКСТОВИЙ БЛОК */}
-      <div className="md:col-span-9 grid grid-cols-2 md:grid-cols-4 gap-4">
-        {shorts.map((short) => (
-          <motion.div key={short.id} variants={itemVariants} className="relative aspect-[9/16] rounded-3xl overflow-hidden group cursor-pointer shadow-md">
-            <Image src={short.thumbnail} alt={short.title} fill className="object-cover group-hover:scale-105 transition-transform opacity-90" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
-            <div className="absolute bottom-4 left-4 right-4 text-white font-bold text-[10px] md:text-xs leading-tight">{short.title}</div>
-            <div className="absolute top-3 right-3 w-6 h-6 bg-red-600 rounded-full flex items-center justify-center">
-                <svg className="w-3 h-3 fill-white" viewBox="0 0 24 24"><path d="M10 9.5l4.5 2.5-4.5 2.5v-5z"/></svg>
-            </div>
-          </motion.div>
-        ))}
+      {/* 📺 РЯД 1: ПЛИТКА 2 (POPULAR MONTH) */}
+      <motion.a 
+        href={popularWeek.url} target="_blank" variants={itemVariants}
+        className="md:col-span-6 relative group cursor-pointer overflow-hidden rounded-[2rem] bg-white shadow-[0_15px_40px_rgba(0,0,0,0.04)] transition-all hover:shadow-[0_25px_60px_rgba(0,0,0,0.08)] hover:-translate-y-1"
+      >
+        <div className="relative aspect-video w-full">
+          <Image src={popularWeek.thumbnail} alt="" fill unoptimized={true} className="object-cover transition-transform duration-700 group-hover:scale-105" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#000066c7]/80 via-transparent to-transparent" />
+          <div className="absolute bottom-6 left-8 text-white">
+             <span className="text-[9px] font-bold text-white/70 uppercase tracking-[0.2em] mb-1 block font-sans">
+               Зараз слухають
+             </span>
+             <h3 className="text-xl md:text-2xl font-normal font-serif leading-tight line-clamp-2">
+               {popularWeek.title}
+             </h3>
+          </div>
+        </div>
+      </motion.a>
 
-        <motion.div variants={itemVariants} className="bg-gradient-to-br from-[#8B5CF6] to-[#6366F1] rounded-[2.5rem] p-6 flex flex-col justify-between text-white shadow-xl relative overflow-hidden">
-           <h3 className="text-xl font-bold leading-tight relative z-10">Зараз <br/> слухають</h3>
-           <div className="flex items-center gap-2 relative z-10">
-              <div className="flex -space-x-2">
-                {[1,2,3].map(i => <div key={i} className="w-6 h-6 rounded-full border-2 border-indigo-500 bg-slate-400" />)}
-              </div>
-              <span className="text-[10px] font-medium">+1.2k</span>
-           </div>
-           <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-white/10 rounded-full blur-xl" />
-        </motion.div>
-      </div>
+      {/* 📱 РЯД 2: SHORTS */}
+      {finalShorts.map((short) => (
+        <motion.a 
+          key={short.id} href={short.url} target="_blank" variants={itemVariants}
+          className="md:col-span-3 relative aspect-[9/16] rounded-[1.8rem] overflow-hidden group shadow-md hover:-translate-y-2 transition-all duration-500"
+        >
+          <Image src={short.thumbnail} alt="" fill unoptimized={true} className="object-cover group-hover:scale-110 transition-transform duration-700" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+          <div className="absolute bottom-5 left-5 right-5 text-white text-[10px] font-bold leading-tight line-clamp-2 uppercase tracking-tight">
+            {short.title}
+          </div>
+        </motion.a>
+      ))}
+
+      <motion.a 
+        href="https://youtube.com/@booka_top" target="_blank" variants={itemVariants}
+        className="md:col-span-3 aspect-[9/16] rounded-[1.8rem] bg-white border-2 border-dashed border-[#FF007A]/10 flex flex-col items-center justify-center gap-4 group hover:bg-[#FF007A]/5 transition-all cursor-pointer shadow-[0_15px_35px_rgba(0,0,0,0.02)]"
+      >
+        <div className="w-14 h-14 rounded-full bg-[#FF007A] text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-500">
+           <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg>
+        </div>
+        <div className="text-center px-2">
+           <span className="text-[10px] font-bold text-[#FF007A] uppercase tracking-[0.2em] block mb-1">Дивитись все</span>
+           <span className="text-[9px] font-serif italic text-[#000066c7]">на YouTube</span>
+        </div>
+      </motion.a>
+
+      {/* 🎞️ РЯД 3: ТРИ ПОПУЛЯРНИХ ВІДЕО ЗА 3 МІСЯЦІ (4+4+4) */}
+      {finalRegularVideos.map((video) => (
+        <motion.a 
+          key={video.id} href={video.url} target="_blank" variants={itemVariants}
+          className="md:col-span-4 group cursor-pointer block"
+        >
+          <div className="relative aspect-video rounded-[1.8rem] overflow-hidden bg-white shadow-[0_10px_30px_rgba(0,0,0,0.04)] transition-all hover:shadow-[0_20px_50px_rgba(0,0,0,0.08)] hover:-translate-y-1">
+            <Image src={video.thumbnail} alt="" fill unoptimized={true} className="object-cover group-hover:scale-105" />
+          </div>
+          <div className="mt-4 px-2">
+            <span className="text-[8px] font-bold text-[#FF007A] uppercase tracking-wider block mb-1">
+              Популярне
+            </span>
+            <h4 className="text-[10px] font-bold text-[#000066c7] line-clamp-1 uppercase tracking-tight font-sans leading-none">
+              {video.title}
+            </h4>
+          </div>
+        </motion.a>
+      ))}
 
     </motion.div>
   );

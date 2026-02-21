@@ -1,10 +1,15 @@
 @import "tailwindcss";
 
 @theme {
-  /* Создаем класс animate-slide-up */
+/* 1. НАШІ КНИЖКОВІ ШРИФТИ */
+  --font-sans: var(--font-montserrat), ui-sans-serif, system-ui, sans-serif;
+  
+  /* 🇺🇦 Підключаємо каліграфію! Додаємо fallback на cursive */
+  --font-serif: var(--font-marck), cursive, serif;
+
+  /* 2. АНІМАЦІЇ (Для спливаючого плеєра) */
   --animate-slide-up: slideUp 0.3s ease-out forwards;
 
-  /* Описываем саму анимацию */
   @keyframes slideUp {
     0% {
       transform: translateY(100%);
@@ -17,31 +22,23 @@
   }
 }
 
-body {
-  background-color: #F8F9FF;
-}
-
+/* 3. БАЗОВІ КОЛЬОРИ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #F8F9FF; /* Наш фірмовий світлий фон */
+  --foreground: #1e293b; /* Колір тексту (slate-800) */
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
+/* Темна тема (опціонально, якщо колись захочеш додати) */
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #0f172a; /* slate-900 */
+    --foreground: #f8fafc; /* slate-50 */
   }
 }
 
+/* 4. СКИДАННЯ ТА ГЛОБАЛЬНІ ПРАВИЛА */
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  /* Ми прибрали жорсткий Arial, тепер Tailwind сам підтягне Montserrat! */
 }

@@ -40,6 +40,14 @@ export default function Player() {
 
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
 
+  // 🇺🇦 Нова функція: Зупиняємо аудіо і ховаємо плеєр
+  const handleClose = () => {
+    if (isPlaying) {
+      togglePlay(); // Ставимо на паузу, якщо зараз грає
+    }
+    setPlayerVisible(false); // Ховаємо віконце
+  };
+
   return (
     <div className="fixed bottom-0 left-0 right-0 z-[60] p-4 sm:p-6 pb-8 animate-slide-up">
       <div className="max-w-4xl mx-auto bg-white/80 backdrop-blur-2xl border border-white/40 rounded-[2rem] shadow-[0_-10px_40px_rgba(0,0,0,0.1)] overflow-hidden relative">
@@ -124,8 +132,9 @@ export default function Player() {
               </span>
           </div>
           
+          {/* 🇺🇦 Оновлена кнопка Закрити */}
           <button 
-            onClick={() => setPlayerVisible(false)} 
+            onClick={handleClose} 
             className="ml-1 p-2 text-slate-400 hover:text-slate-900 transition rounded-full hover:bg-slate-100"
           >
             <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
