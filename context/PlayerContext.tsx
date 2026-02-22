@@ -1,7 +1,14 @@
 "use client";
 
-import React, { createContext, useContext, useState, useRef, useEffect } from 'react';
-import { Audiobook, audiobooks } from '../data/audiobooks';
+import React, { createContext, useContext, useState, useRef } from 'react';
+
+export interface Audiobook {
+  id: number;
+  title: string;
+  author: string;
+  cover: string; // Використовуємо 'cover' для відповідності UI
+  audioUrl?: string;
+}
 
 interface PlayerContextType {
   activeBook: Audiobook;
@@ -17,22 +24,43 @@ interface PlayerContextType {
 
 const PlayerContext = createContext<PlayerContextType | undefined>(undefined);
 
-export function PlayerProvider({ children }: { children: React.ReactNode }) {
-  const [activeBook, setActiveBook] = useState<Audiobook>(audiobooks[0]);
+export function PlayerProvider({ children, initialBook }: { children: React.ReactNode; initialBook: Audiobook }) {
+  const [activeBook, setActiveBook] = useState<Audiobook>(initialBook);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPlayerVisible, setIsPlayerVisible] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
 
-  // Синхронизация состояния Play/Pause, если оно меняется через браузер или горячие клавиши
   const handlePlayStatus = (status: boolean) => {
     setIsPlaying(status);
     if (status) setIsPlayerVisible(true);
   };
 
-  const togglePlay = () => {
+  const togglePlay = async () => {
     if (!audioRef.current) return;
+
+    // Якщо натиснули Play, а посилання на файл ще немає (початковий стан з сервера)
+    if (!activeBook.audioUrl) {
+      try {
+        const res = await fetch(`/api/abooks/${activeBook.id}/chapters`);
+        const chapters = await res.json();
+        if (chapters && chapters.length > 0) {
+          const url = chapters[0].audio_url;
+          setActiveBook(prev => ({ ...prev, audioUrl: url }));
+          
+          // Чекаємо мікрозавдання, щоб React оновив src у тегу <audio>
+          setTimeout(() => {
+            audioRef.current?.play().catch(console.error);
+          }, 100);
+          return;
+        }
+      } catch (err) {
+        console.error("Помилка завантаження аудіо:", err);
+        return;
+      }
+    }
+
     if (isPlaying) {
       audioRef.current.pause();
     } else {
@@ -41,8 +69,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   };
 
   const playBook = (book: Audiobook) => {
-    // Если это та же книга, просто переключаем паузу
-    if (activeBook.audioUrl === book.audioUrl) {
+    // Якщо це та сама книга, просто перемикаємо Play/Pause
+    if (activeBook.id === book.id && activeBook.audioUrl) {
       togglePlay();
       return;
     }
@@ -50,16 +78,17 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     setActiveBook(book);
     setIsPlayerVisible(true);
     setCurrentTime(0);
-    setIsPlaying(false); // Сбрасываем статус перед загрузкой новой
+    setIsPlaying(false);
 
-    // Ждем, пока React обновит DOM и src у аудио
-    setTimeout(() => {
-      if (audioRef.current) {
-        audioRef.current.play()
-          .then(() => setIsPlaying(true))
-          .catch(console.error);
-      }
-    }, 50);
+    // Якщо дані прийшли вже з audioUrl (наприклад, з каталогу)
+    if (book.audioUrl) {
+      setTimeout(() => {
+        audioRef.current?.play().catch(console.error);
+      }, 50);
+    } else {
+      // Інакше запускаємо логіку дозавантаження через togglePlay
+      togglePlay();
+    }
   };
 
   const handleSeek = (time: number) => {
@@ -77,14 +106,14 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     }}>
       {children}
       
-      {/* КЛЮЧЕВОЙ МОМЕНТ: key={activeBook.audioUrl} 
-          Заставляет React пересоздавать аудио при смене трека, 
-          что чинит баг с "залипшим" прогрессом.
+      {/* КЛЮЧОВИЙ ФІКС: 
+          Передаємо undefined, якщо audioUrl порожній, щоб уникнути помилки консолі.
+          key змушує React перестворити елемент при зміні файлу.
       */}
       <audio 
-        key={activeBook.audioUrl}
+        key={activeBook.audioUrl || 'no-audio'}
         ref={audioRef} 
-        src={activeBook.audioUrl} 
+        src={activeBook.audioUrl || undefined} 
         preload="metadata"
         onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
         onDurationChange={(e) => setDuration(e.currentTarget.duration)}

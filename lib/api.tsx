@@ -2,6 +2,10 @@
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://app.booka.top/api';
 
+/**
+ * Універсальний завантажувач даних з кешуванням.
+ * revalidate: час у секундах (86400 = 24 години).
+ */
 async function fetcher(url: string, revalidate = 86400) {
   try {
     const res = await fetch(url, { next: { revalidate } });
@@ -13,6 +17,9 @@ async function fetcher(url: string, revalidate = 86400) {
   }
 }
 
+/**
+ * Перевірка, чи є відео Shorts (вертикальним).
+ */
 async function isVideoShort(videoId: string): Promise<boolean> {
   try {
     const res = await fetch(`https://www.youtube.com/shorts/${videoId}`, {
@@ -25,6 +32,40 @@ async function isVideoShort(videoId: string): Promise<boolean> {
   }
 }
 
+// --- ФУНКЦІЇ ДЛЯ КАТАЛОГУ ТА КНИГ ---
+
+export async function getGenres() {
+  return fetcher(`${API_BASE}/genres`);
+}
+
+export async function getCatalogBooks(params: { genre?: string; search?: string; author?: string; page?: number }) {
+  const query = new URLSearchParams();
+  if (params.genre) query.append('genre', params.genre);
+  if (params.search) query.append('search', params.search);
+  if (params.author) query.append('author', params.author);
+  query.append('per_page', '20');
+  query.append('sort', 'new');
+
+  return fetcher(`${API_BASE}/abooks?${query.toString()}`);
+}
+
+export async function getBook(id: string) {
+  return fetcher(`${API_BASE}/abooks/${id}`, 3600);
+}
+
+export async function getAppBooks() {
+  const [popular, newest] = await Promise.all([
+    fetcher(`${API_BASE}/abooks?sort=popular&per_page=10`),
+    fetcher(`${API_BASE}/abooks?sort=new&per_page=5`)
+  ]);
+  return { 
+    popularBooks: popular?.data || [], 
+    newestBooks: newest?.data || [] 
+  };
+}
+
+// --- ФУНКЦІЇ ДЛЯ YOUTUBE ---
+
 export async function getYoutubeData() {
   const API_KEY = process.env.YOUTUBE_API_KEY;
   const CHANNEL_ID = process.env.YOUTUBE_CHANNEL_ID;
@@ -35,7 +76,7 @@ export async function getYoutubeData() {
   const uploadsPlaylistId = CHANNEL_ID.replace(/^UC/, 'UU');
 
   try {
-    // 1. Беремо останні 50 відео (щоб точно знайти достатньо "довгих" роликів)
+    // 1. Отримуємо останні завантаження (50 відео)
     const uploadsRes = await fetch(
       `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=50&playlistId=${uploadsPlaylistId}&key=${API_KEY}`,
       { next: { revalidate: 86400 } }
@@ -43,7 +84,7 @@ export async function getYoutubeData() {
     const uploadsData = await uploadsRes.json();
     const uploadsItems = uploadsData.items || [];
 
-    // 2. Фільтруємо шортси з основного каналу паралельно
+    // 2. Фільтруємо на звичайні та Shorts паралельно
     const uploadsWithTypes = await Promise.all(
       uploadsItems.map(async (item: any) => {
         const vId = item.snippet.resourceId.videoId;
@@ -59,20 +100,19 @@ export async function getYoutubeData() {
     );
 
     const regularVideosOnly = uploadsWithTypes.filter(v => !v.isShort);
-    
-    // Головне відео - найновіше
     const latestRegularVideo = regularVideosOnly[0] || null;
 
-    // 3. Шортси ТІЛЬКИ з плейлиста "Анонс"
+    // 3. Shorts ТІЛЬКИ з плейлиста "Анонс"
     const shortsPlaylistRes = await fetch(
       `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=10&playlistId=${SHORTS_PLAYLIST_ID}&key=${API_KEY}`,
       { next: { revalidate: 86400 } }
     );
     const shortsData = await shortsPlaylistRes.json();
     const verifiedShorts = [];
+    
     for (const item of (shortsData.items || [])) {
       const vId = item.snippet.resourceId.videoId;
-      if (await isShortVideo(vId)) {
+      if (await isVideoShort(vId)) {
         verifiedShorts.push({
           id: vId,
           title: item.snippet.title,
@@ -83,22 +123,20 @@ export async function getYoutubeData() {
       if (verifiedShorts.length === 3) break;
     }
 
-    // 4. Популярні відео (отримуємо статистику для ВСІХ знайдених довгих відео)
+    // 4. Популярні відео
     const regularIds = regularVideosOnly.map(v => v.id).join(',');
     const statsRes = await fetch(
       `https://www.googleapis.com/youtube/v3/videos?part=statistics&id=${regularIds}&key=${API_KEY}`
     );
     const statsData = await statsRes.json();
-    const statsMap = new Map(statsData.items.map((s: any) => [s.id, parseInt(s.statistics.viewCount) || 0]));
+    const statsMap = new Map((statsData.items || []).map((s: any) => [s.id, parseInt(s.statistics.viewCount) || 0]));
 
     const populars = regularVideosOnly
       .map(v => ({ ...v, views: statsMap.get(v.id) || 0 }))
       .sort((a, b) => b.views - a.views);
 
-    // Відео для правої плитки "Зараз слухають" (найпопулярніше, але не те саме що останнє)
     const popularWeekVideo = populars.find(v => v.id !== latestRegularVideo?.id) || populars[0] || null;
 
-    // Решта популярних для нижнього ряду (виключаємо ті, що вже зверху)
     const remainingPopular = populars.filter(v => 
       v.id !== latestRegularVideo?.id && 
       v.id !== popularWeekVideo?.id
@@ -107,7 +145,7 @@ export async function getYoutubeData() {
     return {
       latestYoutubeVideo: latestRegularVideo,
       youtubeShorts: verifiedShorts,
-      popularVideos: remainingPopular.slice(0, 6), // Передаємо з запасом
+      popularVideos: remainingPopular.slice(0, 6),
       popularWeekVideo: popularWeekVideo
     };
 
@@ -115,26 +153,4 @@ export async function getYoutubeData() {
     console.error("YouTube Logic Error:", e);
     return null;
   }
-}
-
-// Допоміжна назва для функції (щоб не було конфліктів)
-async function isShortVideo(videoId: string) {
-  return isVideoShort(videoId);
-}
-
-// Решта функцій бекенду
-export async function getAppBooks() {
-  const [popular, newest] = await Promise.all([
-    fetcher(`${API_BASE}/abooks?sort=popular&per_page=10`),
-    fetcher(`${API_BASE}/abooks?sort=new&per_page=5`)
-  ]);
-  return { popularBooks: popular?.data || [], newestBooks: newest?.data || [] };
-}
-
-export async function getGenres() {
-  return fetcher(`${API_BASE}/genres`);
-}
-
-export async function getBook(id: string) {
-  return fetcher(`${API_BASE}/abooks/${id}`);
 }
