@@ -1,26 +1,10 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
-import Link from 'next/link';
+import React from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 
-interface Book {
-  id: number;
-  title: string;
-  author: string;
-  cover_url: string;
-  description: string;
-}
-
-interface YouTubeShort {
-  id: string;
-  title: string;
-  thumbnail: string;
-  url: string;
-}
-
-interface PopularVideo {
+interface YouTubeVideo {
   id: string;
   title: string;
   thumbnail: string;
@@ -28,7 +12,12 @@ interface PopularVideo {
 }
 
 interface BentoGridProps {
-  setActiveBook: (book: any) => void;
+  initialData?: {
+    latestYoutubeVideo: YouTubeVideo | null;
+    youtubeShorts: YouTubeVideo[];
+    popularVideos: YouTubeVideo[];
+    popularWeekVideo: YouTubeVideo | null;
+  };
 }
 
 const containerVariants = {
@@ -41,71 +30,30 @@ const itemVariants = {
   visible: { y: 0, opacity: 1, transition: { duration: 0.5, ease: "easeOut" } },
 };
 
-export default function BentoGrid({ setActiveBook }: BentoGridProps) {
-  const [latestBooks, setLatestBooks] = useState<Book[]>([]);
-  const [youtubeShorts, setYoutubeShorts] = useState<YouTubeShort[]>([]);
-  const [popularVideos, setPopularVideos] = useState<PopularVideo[]>([]);
-  const [latestYoutubeVideo, setLatestYoutubeVideo] = useState<PopularVideo | null>(null);
-  const [popularWeekVideo, setPopularWeekVideo] = useState<PopularVideo | null>(null);
-  const [loading, setLoading] = useState(true);
+const fallbackPopular = [
+  { id: 'v1', title: 'Огляд: Сучасна жіноча проза', thumbnail: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=1000', url: '#' },
+  { id: 'v2', title: 'Хіт тижня: Психологія стосунків', thumbnail: 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?q=80&w=1000', url: '#' },
+  { id: 'v3', title: 'Як ми озвучуємо книги', thumbnail: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=1000', url: '#' },
+];
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [latestRes, booksRes, shortsRes, popularRes, popularWeekRes] = await Promise.all([
-          fetch('/api/youtube-latest').catch(() => null),
-          fetch('/api/abooks?per_page=5&sort=new'),
-          fetch('/api/youtube-shorts').catch(() => null),
-          fetch('/api/youtube-popular').catch(() => null),
-          fetch('/api/youtube-popular-week').catch(() => null) 
-        ]);
+const fallbackShorts = [
+  { id: 's1', title: 'Естетика читання', thumbnail: 'https://images.unsplash.com/photo-1521302340133-cf7b2972320d?q=80&w=600', url: '#' },
+  { id: 's2', title: 'Новий реліз!', thumbnail: 'https://images.unsplash.com/photo-1457369804613-52c61a468e7d?q=80&w=600', url: '#' },
+];
 
-        const latestYoutubeData = await latestRes?.json() || [];
-        const booksJson = await booksRes.json();
-        const shortsData = await shortsRes?.json() || [];
-        const popularData = await popularRes?.json() || [];
-        const popularWeekData = await popularWeekRes?.json() || [];
+export default function BentoGrid({ initialData }: BentoGridProps) {
+  // Використовуємо дані з сервера або фолбеки
+  const latestVideo = initialData?.latestYoutubeVideo || fallbackPopular[0];
+  const popularWeek = initialData?.popularWeekVideo || fallbackPopular[1];
+  const youtubeShorts = initialData?.youtubeShorts || [];
+  const popularVideos = initialData?.popularVideos || [];
 
-        setLatestYoutubeVideo(latestYoutubeData[0] || null);
-        setPopularWeekVideo(popularWeekData[0] || null); 
-        setLatestBooks(booksJson.data || []);
-        setYoutubeShorts(Array.isArray(shortsData) ? shortsData : []);
-        setPopularVideos(Array.isArray(popularData) ? popularData : []);
-        
-        setLoading(false);
-      } catch (e) {
-        console.error("Помилка завантаження:", e);
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, []);
-
-  if (loading) return <div className="py-20 text-center text-slate-400 font-serif italic uppercase tracking-widest text-[10px]">Налаштовуємо ефір Booka Radio...</div>;
-
-  const fallbackPopular = [
-    { id: 'v1', title: 'Огляд: Сучасна жіноча проза', thumbnail: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=1000', url: '#' },
-    { id: 'v2', title: 'Хіт тижня: Психологія стосунків', thumbnail: 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?q=80&w=1000', url: '#' },
-    { id: 'v3', title: 'Як ми озвучуємо книги', thumbnail: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=1000', url: '#' },
-    { id: 'v4', title: 'Інтерв’ю з авторкою', thumbnail: 'https://images.unsplash.com/photo-1490750967868-88aa4486c946?q=80&w=1000', url: '#' },
-    { id: 'v5', title: 'Топ 5 романів літа', thumbnail: 'https://images.unsplash.com/photo-1457369804613-52c61a468e7d?q=80&w=1000', url: '#' },
-  ];
-
-  const fallbackShorts = [
-    { id: 's1', title: 'Естетика читання', thumbnail: 'https://images.unsplash.com/photo-1521302340133-cf7b2972320d?q=80&w=600', url: '#' },
-    { id: 's2', title: 'Новий реліз!', thumbnail: 'https://images.unsplash.com/photo-1457369804613-52c61a468e7d?q=80&w=600', url: '#' },
-    { id: 's3', title: 'За лаштунками', thumbnail: 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?q=80&w=600', url: '#' },
-  ];
-
-  const latestVideo = latestYoutubeVideo || fallbackPopular[0];
-  const popularWeek = popularWeekVideo || fallbackPopular[1]; 
-  
-  // 🚀 Логіка для нижнього ряду: фільтруємо дублікати та беремо топ-3 за 3 місяці
+  // Логіка фільтрації дублікатів
   const displayRegularVideos = popularVideos
     .filter(v => v.id !== latestVideo.id && v.id !== popularWeek.id)
     .slice(0, 3);
 
-  const finalRegularVideos = displayRegularVideos.length > 0 ? displayRegularVideos : fallbackPopular.slice(2, 5);
+  const finalRegularVideos = displayRegularVideos.length > 0 ? displayRegularVideos : fallbackPopular;
   const finalShorts = youtubeShorts.length >= 3 ? youtubeShorts.slice(0, 3) : fallbackShorts;
 
   return (
@@ -116,7 +64,6 @@ export default function BentoGrid({ setActiveBook }: BentoGridProps) {
       viewport={{ once: true, margin: "-100px" }}
       className="grid grid-cols-1 md:grid-cols-12 gap-6 auto-rows-auto max-w-7xl mx-auto px-6 py-10"
     >
-      
       {/* 📺 РЯД 1: ПЛИТКА 1 (LATEST) */}
       <motion.a 
         href={latestVideo.url} target="_blank" variants={itemVariants}
@@ -132,7 +79,7 @@ export default function BentoGrid({ setActiveBook }: BentoGridProps) {
         </div>
       </motion.a>
 
-      {/* 📺 РЯД 1: ПЛИТКА 2 (POPULAR MONTH) */}
+      {/* 📺 РЯД 1: ПЛИТКА 2 (POPULAR WEEK) */}
       <motion.a 
         href={popularWeek.url} target="_blank" variants={itemVariants}
         className="md:col-span-6 relative group cursor-pointer overflow-hidden rounded-[2rem] bg-white shadow-[0_15px_40px_rgba(0,0,0,0.04)] transition-all hover:shadow-[0_25px_60px_rgba(0,0,0,0.08)] hover:-translate-y-1"
@@ -141,12 +88,8 @@ export default function BentoGrid({ setActiveBook }: BentoGridProps) {
           <Image src={popularWeek.thumbnail} alt="" fill unoptimized={true} className="object-cover transition-transform duration-700 group-hover:scale-105" />
           <div className="absolute inset-0 bg-gradient-to-t from-[#000066c7]/80 via-transparent to-transparent" />
           <div className="absolute bottom-6 left-8 text-white">
-             <span className="text-[9px] font-bold text-white/70 uppercase tracking-[0.2em] mb-1 block font-sans">
-               Зараз слухають
-             </span>
-             <h3 className="text-xl md:text-2xl font-normal font-serif leading-tight line-clamp-2">
-               {popularWeek.title}
-             </h3>
+             <span className="text-[9px] font-bold text-white/70 uppercase tracking-[0.2em] mb-1 block font-sans">Зараз слухають</span>
+             <h3 className="text-xl md:text-2xl font-normal font-serif leading-tight line-clamp-2">{popularWeek.title}</h3>
           </div>
         </div>
       </motion.a>
@@ -178,7 +121,7 @@ export default function BentoGrid({ setActiveBook }: BentoGridProps) {
         </div>
       </motion.a>
 
-      {/* 🎞️ РЯД 3: ТРИ ПОПУЛЯРНИХ ВІДЕО ЗА 3 МІСЯЦІ (4+4+4) */}
+      {/* 🎞️ РЯД 3: ПОПУЛЯРНІ ВІДЕО */}
       {finalRegularVideos.map((video) => (
         <motion.a 
           key={video.id} href={video.url} target="_blank" variants={itemVariants}
@@ -188,16 +131,13 @@ export default function BentoGrid({ setActiveBook }: BentoGridProps) {
             <Image src={video.thumbnail} alt="" fill unoptimized={true} className="object-cover group-hover:scale-105" />
           </div>
           <div className="mt-4 px-2">
-            <span className="text-[8px] font-bold text-[#FF007A] uppercase tracking-wider block mb-1">
-              Популярне
-            </span>
+            <span className="text-[8px] font-bold text-[#FF007A] uppercase tracking-wider block mb-1">Популярне</span>
             <h4 className="text-[10px] font-bold text-[#000066c7] line-clamp-1 uppercase tracking-tight font-sans leading-none">
               {video.title}
             </h4>
           </div>
         </motion.a>
       ))}
-
     </motion.div>
   );
 }

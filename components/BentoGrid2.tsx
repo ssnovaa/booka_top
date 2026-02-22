@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
+import { usePlayer } from '../context/PlayerContext';
 
 interface Book {
   id: number;
@@ -13,7 +14,10 @@ interface Book {
 }
 
 interface BentoGrid2Props {
-  setActiveBook: (book: any) => void;
+  initialData?: {
+    popularBooks: Book[];
+    newestBooks: Book[];
+  };
 }
 
 const containerVariants = {
@@ -26,10 +30,11 @@ const itemVariants = {
   visible: { y: 0, opacity: 1, transition: { duration: 0.6, ease: "easeOut" } },
 };
 
-export default function BentoGrid2({ setActiveBook }: BentoGrid2Props) {
-  const [popularBooks, setPopularBooks] = useState<Book[]>([]);
-  const [newestBooks, setNewestBooks] = useState<Book[]>([]);
-  const [loading, setLoading] = useState(true);
+export default function BentoGrid2({ initialData }: BentoGrid2Props) {
+  const { playBook } = usePlayer();
+
+  const popularBooks = initialData?.popularBooks || [];
+  const newestBooks = initialData?.newestBooks || [];
 
   const formatImageUrl = (raw: string | null) => {
     if (!raw) return null;
@@ -40,31 +45,12 @@ export default function BentoGrid2({ setActiveBook }: BentoGrid2Props) {
     return `https://app.booka.top/${s}`;
   };
 
-  useEffect(() => {
-    const fetchAppBooks = async () => {
-      try {
-        const [popRes, newRes] = await Promise.all([
-          fetch('/api/abooks?sort=popular&per_page=10').catch(() => null),
-          fetch('/api/abooks?sort=new&per_page=5').catch(() => null)
-        ]);
-        let popData = popRes?.ok ? (await popRes.json()).data : [];
-        let newData = newRes?.ok ? (await newRes.json()).data : [];
-        setPopularBooks(popData.length > 0 ? popData : newData);
-        setNewestBooks(newData);
-        setLoading(false);
-      } catch (e) {
-        setLoading(false);
-      }
-    };
-    fetchAppBooks();
-  }, []);
-
   const handlePlayBook = async (book: Book) => {
     try {
       const res = await fetch(`/api/abooks/${book.id}/chapters`);
       const chapters = await res.json();
       if (chapters?.length > 0) {
-        setActiveBook({
+        playBook({
           id: book.id,
           title: book.title,
           author: book.author,
@@ -72,13 +58,13 @@ export default function BentoGrid2({ setActiveBook }: BentoGrid2Props) {
           audioUrl: chapters[0].audio_url
         });
       }
-    } catch (err) { console.error(err); }
+    } catch (err) { console.error("Помилка відтворення:", err); }
   };
 
-  if (loading || popularBooks.length === 0) return null;
+  if (popularBooks.length === 0 && newestBooks.length === 0) return null;
 
-  const mainBook = popularBooks[0];
-  const newestBook = newestBooks.find(b => b?.id !== mainBook?.id) || newestBooks[0];
+  const mainBook = popularBooks[0] || newestBooks[0];
+  const newestBook = newestBooks.find(b => b?.id !== mainBook?.id) || newestBooks[1];
   const trendingBooks = popularBooks.filter(b => b?.id !== mainBook?.id && b?.id !== newestBook?.id).slice(0, 3);
 
   return (
@@ -87,10 +73,9 @@ export default function BentoGrid2({ setActiveBook }: BentoGrid2Props) {
       initial="hidden"
       whileInView="visible"
       viewport={{ once: true }}
-      className="grid grid-cols-1 md:grid-cols-12 gap-8 max-w-6xl mx-auto px-6" // Збільшено gap для простору
+      className="grid grid-cols-1 md:grid-cols-12 gap-8 max-w-6xl mx-auto px-6"
     >
-      
-      {/* 1. ГОЛОВНА КНИГА - ПОВІТРЯНА ТА ВЕЛИКА */}
+      {/* 1. ГОЛОВНА КНИГА */}
       <motion.div 
         variants={itemVariants}
         onClick={() => handlePlayBook(mainBook)}
@@ -111,20 +96,19 @@ export default function BentoGrid2({ setActiveBook }: BentoGrid2Props) {
         </div>
       </motion.div>
 
-      {/* 2. НОВИНКА - ЛЕГКА ТА ЕЛЕГАНТНА */}
+      {/* 2. НОВИНКА */}
       {newestBook && (
         <motion.div 
           variants={itemVariants}
           onClick={() => handlePlayBook(newestBook)}
           className="md:col-span-8 relative group cursor-pointer overflow-hidden rounded-3xl bg-white shadow-[0_20px_50px_rgba(0,0,0,0.05)] p-8 flex items-center gap-10 transition-all duration-500 group-hover:shadow-[0_40px_80px_rgba(0,0,0,0.08)] group-hover:-translate-y-1"
         >
-          {/* Декоративний фон */}
           <div className="absolute inset-0 z-0">
             <Image 
               src="https://images.unsplash.com/photo-1490750967868-88aa4486c946?q=80&w=1000&auto=format&fit=crop" 
               alt="background"
               fill
-              className="object-cover opacity-50 blur-[2px] transition-transform duration-1000 group-hover:scale-110" // Твій вибір opacity 0.5
+              className="object-cover opacity-50 blur-[2px] transition-transform duration-1000 group-hover:scale-110"
             />
             <div className="absolute inset-0 bg-gradient-to-r from-white via-white/80 to-transparent" />
           </div>
@@ -153,7 +137,7 @@ export default function BentoGrid2({ setActiveBook }: BentoGrid2Props) {
         </motion.div>
       )}
 
-      {/* 3. ТОП-3 - "ЛІТАЮЧІ" КАРТКИ */}
+      {/* 3. ТОП-3 */}
       <div className="md:col-span-8 grid grid-cols-3 gap-8">
         {trendingBooks.map((book) => (
           <motion.div 
@@ -174,7 +158,6 @@ export default function BentoGrid2({ setActiveBook }: BentoGrid2Props) {
           </motion.div>
         ))}
       </div>
-
     </motion.div>
   );
 }
