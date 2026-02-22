@@ -9,14 +9,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 export default function CatalogClient({ initialBooks, genres, currentParams }: any) {
   const router = useRouter();
   
-  // Локальний стан для списку книг (щоб додавати нові до старих)
+  // 1. СТАН ДЛЯ КНИГ ТА ПАГІНАЦІЇ
   const [books, setBooks] = useState(initialBooks);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(initialBooks.length >= 20);
   const [searchValue, setSearchValue] = useState(currentParams.q || '');
 
-  // Якщо змінилися фільтри (жанр або пошук), скидаємо все до початкового стану
+  // Скидання списку при зміні параметрів (фільтрів)
   useEffect(() => {
     setBooks(initialBooks);
     setPage(1);
@@ -32,6 +32,7 @@ export default function CatalogClient({ initialBooks, genres, currentParams }: a
     return `https://app.booka.top/${s}`;
   };
 
+  // 2. ЛОГІКА ЗАВАНТАЖЕННЯ ДОДАТКОВИХ КНИГ
   const loadMore = async () => {
     if (loading) return;
     setLoading(true);
@@ -50,9 +51,9 @@ export default function CatalogClient({ initialBooks, genres, currentParams }: a
       const newBooks = json.data || [];
 
       if (newBooks.length > 0) {
-        setBooks([...books, ...newBooks]); // Додаємо нові книги до наявних
+        setBooks([...books, ...newBooks]);
         setPage(nextPage);
-        if (newBooks.length < 20) setHasMore(false); // Якщо прийшло менше 20, значить книги закінчилися
+        if (newBooks.length < 20) setHasMore(false);
       } else {
         setHasMore(false);
       }
@@ -72,15 +73,19 @@ export default function CatalogClient({ initialBooks, genres, currentParams }: a
 
   return (
     <div className="space-y-12">
-      {/* ПАНЕЛЬ ФІЛЬТРІВ (без змін) */}
-      <div className="flex flex-col md:flex-row gap-6 items-center justify-between bg-white p-6 rounded-[2rem] shadow-[0_15px_40px_rgba(0,0,0,0.03)] border border-slate-100">
-        <form onSubmit={(e) => { e.preventDefault(); updateParams('q', searchValue); }} className="relative w-full md:w-96">
+      
+      {/* ПАНЕЛЬ ФІЛЬТРІВ ТА ПОШУКУ */}
+      <div className="flex flex-col md:flex-row gap-6 items-center justify-between bg-white p-6 rounded-[2.5rem] shadow-[0_15px_40px_rgba(0,0,0,0.03)] border border-slate-100">
+        <form 
+          onSubmit={(e) => { e.preventDefault(); updateParams('q', searchValue); }} 
+          className="relative w-full md:w-96"
+        >
           <input
             type="text"
             placeholder="Пошук книги або автора..."
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
-            className="w-full pl-12 pr-6 py-3.5 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-[#FF007A]/20 transition-all"
+            className="w-full pl-12 pr-6 py-3.5 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-[#FF007A]/20 transition-all outline-none"
           />
           <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -90,7 +95,7 @@ export default function CatalogClient({ initialBooks, genres, currentParams }: a
         <div className="flex gap-2 overflow-x-auto no-scrollbar w-full md:w-auto pb-2 md:pb-0">
           <button
             onClick={() => updateParams('genre', null)}
-            className={`px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${!currentParams.genre ? 'bg-[#000066c7] text-white' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
+            className={`px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${!currentParams.genre ? 'bg-[#000066c7] text-white shadow-lg shadow-blue-900/20' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
           >
             Всі
           </button>
@@ -98,7 +103,7 @@ export default function CatalogClient({ initialBooks, genres, currentParams }: a
             <button
               key={genre.id}
               onClick={() => updateParams('genre', genre.id.toString())}
-              className={`px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-widest whitespace-nowrap transition-all ${currentParams.genre == genre.id ? 'bg-[#000066c7] text-white' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
+              className={`px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-widest whitespace-nowrap transition-all ${currentParams.genre == genre.id ? 'bg-[#000066c7] text-white shadow-lg shadow-blue-900/20' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
             >
               {genre.name}
             </button>
@@ -108,7 +113,7 @@ export default function CatalogClient({ initialBooks, genres, currentParams }: a
 
       {/* СІТКА КНИГ */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8">
-        <AnimatePresence>
+        <AnimatePresence mode='popLayout'>
           {books.map((book: any, index: number) => (
             <Link href={`/catalog/${book.id}`} key={`${book.id}-${index}`}>
               <motion.div 
@@ -123,8 +128,11 @@ export default function CatalogClient({ initialBooks, genres, currentParams }: a
                     alt={book.title} 
                     fill unoptimized className="object-cover transition-transform duration-700 group-hover:scale-105" 
                   />
+                  <div className="absolute top-4 left-4 bg-[#FF007A] text-white text-[8px] font-bold px-2 py-1 rounded-md uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
+                    Слухати фрагмент
+                  </div>
                 </div>
-                <h3 className="font-bold text-[#000066c7] text-sm line-clamp-1">{book.title}</h3>
+                <h3 className="font-bold text-[#000066c7] text-sm line-clamp-1 italic">{book.title}</h3>
                 <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-tighter">{book.author}</p>
               </motion.div>
             </Link>
@@ -157,6 +165,52 @@ export default function CatalogClient({ initialBooks, genres, currentParams }: a
           Це всі книги, які ми знайшли для вас ✨
         </p>
       )}
+
+      {/* ==========================================
+          КРОК 1: SEO СЕМАНТИЧНИЙ БЛОК (ДЛЯ GOOGLE ТА AI)
+          ========================================== */}
+      <section className="mt-32 pt-20 border-t border-slate-200">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="text-sm font-bold text-[#000066c7] uppercase tracking-[0.2em] mb-8 text-center md:text-left">
+            Сучасні українські аудіокниги про кохання, фентезі та пригоди
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 text-[14px] leading-relaxed text-slate-500 font-sans">
+            <div className="space-y-4">
+              <p>
+                Ласкаво просимо до онлайн-каталогу <strong>Booka</strong> — вашого провідника у світ сучасної української літератури. 
+                Ми зібрали найкращі <strong>любовні романи</strong>, захоплююче <strong>романтичне фентезі</strong> та містичні жіночі історії, 
+                які озвучені професійними дикторами спеціально для наших слухачок.
+              </p>
+              <p>
+                На нашому сайті ви можете безкоштовно послухати <strong>ознайомчий фрагмент (першу главу)</strong> кожної книги. 
+                Це ідеальна можливість оцінити якість озвучки та зацікавитися сюжетом перед тим, як перейти до повної версії.
+              </p>
+            </div>
+            <div className="space-y-4">
+              <p>
+                Якщо вас зацікавили пригоди героїнь, пристрасні почуття або магічні світи — ви можете <strong>слухати аудіокниги на Андроїд</strong> 
+                у нашому офіційному додатку або перейти на наш YouTube-канал для повного занурення в історію.
+              </p>
+              <p>
+                Слухайте <strong>аудіокниги українською мовою онлайн</strong> у високій якості. 
+                Ми фокусуємося на актуальних жанрах: від легких сучасних мелодрам до темної містики та пригод, 
+                де в центрі сюжету завжди залишається людина та її емоції.
+              </p>
+            </div>
+          </div>
+          
+          {/* LSI Ключі для AI розуміння */}
+          <div className="mt-10 flex flex-wrap gap-x-6 gap-y-2 opacity-40 text-[10px] uppercase tracking-widest font-bold text-slate-400">
+            <span>#аудіокниги_українською</span>
+            <span>#слухати_онлайн</span>
+            <span>#жіночі_історії</span>
+            <span>#сучасна_література</span>
+            <span>#професійна_озвучка</span>
+            <span>#любовні_романи</span>
+          </div>
+        </div>
+      </section>
+
     </div>
   );
 }
