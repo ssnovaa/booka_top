@@ -22,7 +22,7 @@ export async function GET() {
     // Витягуємо Video ID за допомогою регулярного виразу
     const videoIdMatch = xml.match(/<yt:videoId>(.*?)<\/yt:videoId>/);
     // Витягуємо заголовок (нам потрібен той, що всередині першого <entry>)
-    const titleMatch = xml.match(/<entry>.*?<title>(.*?)<\/title>/s);
+    const titleMatch = xml.match(/<entry>[\s\S]*?<title>([\s\S]*?)<\/title>/);
 
     if (!videoIdMatch) {
       console.error('Не вдалося знайти відео в RSS-фіді');
