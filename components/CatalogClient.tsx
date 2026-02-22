@@ -9,14 +9,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 export default function CatalogClient({ initialBooks, genres, currentParams }: any) {
   const router = useRouter();
   
-  // 1. СТАН ДЛЯ КНИГ ТА ПАГІНАЦІЇ
+  // 1. СОСТОЯНИЕ ДЛЯ КНИГ И ПАГИНАЦИИ
   const [books, setBooks] = useState(initialBooks);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(initialBooks.length >= 20);
   const [searchValue, setSearchValue] = useState(currentParams.q || '');
 
-  // Скидання списку при зміні параметрів (фільтрів)
+  // Сброс списка при изменении параметров (фильтров)
   useEffect(() => {
     setBooks(initialBooks);
     setPage(1);
@@ -32,7 +32,7 @@ export default function CatalogClient({ initialBooks, genres, currentParams }: a
     return `https://app.booka.top/${s}`;
   };
 
-  // 2. ЛОГІКА ЗАВАНТАЖЕННЯ ДОДАТКОВИХ КНИГ
+  // 2. ЛОГИКА ЗАГРУЗКИ ДОПОЛНИТЕЛЬНЫХ КНИГ
   const loadMore = async () => {
     if (loading) return;
     setLoading(true);
@@ -58,7 +58,7 @@ export default function CatalogClient({ initialBooks, genres, currentParams }: a
         setHasMore(false);
       }
     } catch (error) {
-      console.error("Помилка підвантаження:", error);
+      console.error("Ошибка подгрузки:", error);
     } finally {
       setLoading(false);
     }
@@ -74,7 +74,7 @@ export default function CatalogClient({ initialBooks, genres, currentParams }: a
   return (
     <div className="space-y-12">
       
-      {/* ПАНЕЛЬ ФІЛЬТРІВ ТА ПОШУКУ */}
+      {/* ПАНЕЛЬ ФИЛЬТРОВ И ПОИСКА */}
       <div className="flex flex-col md:flex-row gap-6 items-center justify-between bg-white p-6 rounded-[2.5rem] shadow-[0_15px_40px_rgba(0,0,0,0.03)] border border-slate-100">
         <form 
           onSubmit={(e) => { e.preventDefault(); updateParams('q', searchValue); }} 
@@ -82,7 +82,7 @@ export default function CatalogClient({ initialBooks, genres, currentParams }: a
         >
           <input
             type="text"
-            placeholder="Пошук книги або автора..."
+            placeholder="Поиск книги или автора..."
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
             className="w-full pl-12 pr-6 py-3.5 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-[#FF007A]/20 transition-all outline-none"
@@ -97,7 +97,7 @@ export default function CatalogClient({ initialBooks, genres, currentParams }: a
             onClick={() => updateParams('genre', null)}
             className={`px-6 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${!currentParams.genre ? 'bg-[#000066c7] text-white shadow-lg shadow-blue-900/20' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
           >
-            Всі
+            Все
           </button>
           {genres.filter((g: any) => g.books_count > 0).map((genre: any) => (
             <button
@@ -111,7 +111,7 @@ export default function CatalogClient({ initialBooks, genres, currentParams }: a
         </div>
       </div>
 
-      {/* СІТКА КНИГ */}
+      {/* СЕТКА КНИГ */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8">
         <AnimatePresence mode='popLayout'>
           {books.map((book: any, index: number) => (
@@ -120,18 +120,23 @@ export default function CatalogClient({ initialBooks, genres, currentParams }: a
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: (index % 10) * 0.05 }}
-                className="group cursor-pointer"
+                className="group cursor-pointer relative"
               >
                 <div className="relative aspect-[2/3] rounded-[1.8rem] overflow-hidden bg-white shadow-[0_15px_35px_rgba(0,0,0,0.05)] mb-4 transition-all duration-500 group-hover:shadow-[0_30px_60px_rgba(0,0,0,0.1)] group-hover:-translate-y-2">
                   <Image 
                     src={formatImageUrl(book.cover_url)} 
                     alt={book.title} 
-                    fill unoptimized className="object-cover transition-transform duration-700 group-hover:scale-105" 
+                    fill unoptimized className="object-cover transition-transform duration-700 group-hover:scale-110" 
                   />
-                  <div className="absolute top-4 left-4 bg-[#FF007A] text-white text-[8px] font-bold px-2 py-1 rounded-md uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">
-                    Слухати фрагмент
+
+                  {/* CTA ПРИ НАВЕДЕНИИ */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#000066]/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-end justify-center pb-6">
+                    <span className="text-white text-[9px] font-bold uppercase tracking-widest bg-white/10 backdrop-blur-md px-4 py-2 rounded-full border border-white/20">
+                      Слушать фрагмент
+                    </span>
                   </div>
                 </div>
+                
                 <h3 className="font-bold text-[#000066c7] text-sm line-clamp-1 italic">{book.title}</h3>
                 <p className="text-[10px] text-slate-400 mt-1 uppercase tracking-tighter">{book.author}</p>
               </motion.div>
@@ -140,7 +145,7 @@ export default function CatalogClient({ initialBooks, genres, currentParams }: a
         </AnimatePresence>
       </div>
 
-      {/* КНОПКА "ПОКАЗАТИ БІЛЬШЕ" */}
+      {/* КНОПКА "ПОКАЗАТЬ ЕЩЕ" */}
       {hasMore && (
         <div className="flex justify-center pt-10">
           <button
@@ -151,55 +156,47 @@ export default function CatalogClient({ initialBooks, genres, currentParams }: a
             {loading ? (
               <div className="flex items-center gap-3">
                 <div className="w-4 h-4 border-2 border-[#FF007A]/30 border-t-[#FF007A] rounded-full animate-spin"></div>
-                Завантаження...
+                Загрузка...
               </div>
             ) : (
-              "Показати більше"
+              "Показать еще"
             )}
           </button>
         </div>
       )}
 
-      {!hasMore && books.length > 0 && (
-        <p className="text-center text-slate-300 text-xs uppercase tracking-widest pt-10">
-          Це всі книги, які ми знайшли для вас ✨
-        </p>
-      )}
-
-      {/* ==========================================
-          КРОК 1: SEO СЕМАНТИЧНИЙ БЛОК (ДЛЯ GOOGLE ТА AI)
-          ========================================== */}
+      {/* SEO СЕМАНТИЧЕСКИЙ БЛОК */}
       <section className="mt-32 pt-20 border-t border-slate-200">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-sm font-bold text-[#000066c7] uppercase tracking-[0.2em] mb-8 text-center md:text-left">
-            Сучасні українські аудіокниги про кохання, фентезі та пригоди
+            Современные украинские аудиокниги о любви, фэнтези и приключениях
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10 text-[14px] leading-relaxed text-slate-500 font-sans">
             <div className="space-y-4">
               <p>
-                Ласкаво просимо до онлайн-каталогу <strong>Booka</strong> — вашого провідника у світ сучасної української літератури. 
-                Ми зібрали найкращі <strong>любовні романи</strong>, захоплююче <strong>романтичне фентезі</strong> та містичні жіночі історії, 
-                які озвучені професійними дикторами спеціально для наших слухачок.
+                Добро пожаловать в онлайн-каталог <strong>Booka</strong> — ваш проводник в мир современной украинской литературы. 
+                Мы собрали лучшие <strong>любовные романы</strong>, захватывающее <strong>романтическое фэнтези</strong> и мистические женские истории, 
+                озвученные профессиональными дикторами специально для наших слушательниц.
               </p>
               <p>
-                На нашому сайті ви можете безкоштовно послухати <strong>ознайомчий фрагмент (першу главу)</strong> кожної книги. 
-                Це ідеальна можливість оцінити якість озвучки та зацікавитися сюжетом перед тим, як перейти до повної версії.
+                На нашем сайте вы можете бесплатно послушать <strong>ознакомительный фрагмент (первую главу)</strong> каждой книги. 
+                Это идеальная возможность оценить качество озвучки и заинтересоваться сюжетом перед тем, как перейти к полной версии.
               </p>
             </div>
             <div className="space-y-4">
               <p>
-                Якщо вас зацікавили пригоди героїнь, пристрасні почуття або магічні світи — ви можете <strong>слухати аудіокниги на Андроїд</strong> 
-                у нашому офіційному додатку або перейти на наш YouTube-канал для повного занурення в історію.
+                Если вас заинтересовали приключения героинь, страстные чувства или магические миры — вы можете <strong>слушать аудиокниги на Андроид</strong> 
+                в нашем официальном приложении или перейти на наш YouTube-канал для полного погружения в историю.
               </p>
               <p>
-                Слухайте <strong>аудіокниги українською мовою онлайн</strong> у високій якості. 
-                Ми фокусуємося на актуальних жанрах: від легких сучасних мелодрам до темної містики та пригод, 
-                де в центрі сюжету завжди залишається людина та її емоції.
+                Слушайте <strong>аудиокниги на украинском языке онлайн</strong> в высоком качестве. 
+                Мы фокусируемся на актуальных жанрах: от легких современных мелодрам до темной мистики и приключений, 
+                где в центре сюжета всегда остается человек и его эмоции.
               </p>
             </div>
           </div>
           
-          {/* LSI Ключі для AI розуміння */}
+          {/* LSI Ключи для понимания ИИ */}
           <div className="mt-10 flex flex-wrap gap-x-6 gap-y-2 opacity-40 text-[10px] uppercase tracking-widest font-bold text-slate-400">
             <span>#аудіокниги_українською</span>
             <span>#слухати_онлайн</span>
